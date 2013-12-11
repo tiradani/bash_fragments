@@ -1,0 +1,73 @@
+#! /bin/bash
+
+function usage
+{
+cat << EOF
+usage: $0 options
+
+<put description here>
+
+OPTIONS:
+   -h      Show this message
+   -t      type - description for argument
+EOF
+}
+
+function check_args
+{
+    while getopts “ht:” OPTION
+    do
+        case $OPTION in
+            h)
+                usage
+                exit 1
+                ;;
+            t)
+                export type=$OPTARG
+                ;;
+            ?)
+                usage
+                exit 1
+                ;;
+        esac
+    done
+}
+
+function cfg.parser ()
+{
+    local IFS=$'\n' && ini=( $(<$1) )   # convert to line-array
+    ini=( ${ini[*]//;*/} )              # remove comments ';'
+    ini=( ${ini[*]//\#*/} )             # remove comments '#'
+    ini=( ${ini[*]/\ =\ /=} )           # remove anything with a space around ' = '
+    ini=( ${ini[*]/#[/\}$'\n'cfg.section.} )    # set section prefix
+    ini=( ${ini[*]/%]/ \(} )            # convert text2function (1)
+    ini=( ${ini[*]/=/=\( } )            # convert item to array
+    ini=( ${ini[*]/%/ \)} )             # close array parenthesis
+    ini=( ${ini[*]/%\( \)/\(\) \{} )    # convert text2function (2)
+    ini=( ${ini[*]/%\} \)/\}} )         # remove extra parenthesis
+    ini=( ${ini[*]/#\ */} )             # remove blank lines
+    ini=( ${ini[*]/#\ */} )             # remove blank lines with tabs
+    ini[0]=''                           # remove first element
+    ini[${#ini[*]} + 1]='}'             # add the last brace
+    eval "$(echo "${ini[*]}")" # eval the result
+}
+
+function section_exists ()
+{
+    section_name=$1
+    lines=`declare -f | grep cfg.section.${section_name} | wc -l`
+    return $lines
+}
+
+function config ()
+{
+    cfg.parser "${INSTALL_HOME}/etc/gatekeeper_installer.ini"
+    cfg.section.${install_type}
+
+    section_exists ${FQDN}
+    exists=$?
+    if [ $exists -gt 0 ]
+    then
+        cfg.section.${FQDN}
+    fi
+}
