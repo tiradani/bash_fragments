@@ -15,7 +15,7 @@ EOF
 
 function check_args
 {
-    while getopts “ht:” OPTION
+    while getopts "ht:" OPTION
     do
         case $OPTION in
             h)
