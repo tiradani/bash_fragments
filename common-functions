@@ -31,6 +31,7 @@ function check_args
                 ;;
         esac
     done
+    shift $(($OPTIND - 1))
 }
 
 function cfg.parser ()
